@@ -66,7 +66,8 @@ static void MX_RTC_Init(void);
 
   bool switch_state()
   {
-    if ((GPIOA->IDR & (1U << 0)) != 0)
+    // *check if PA0 is HIGH (pressed) or LOW (not pressed)
+    if ((GPIOA->IDR & (1U)) != 0) // 1U = 0000 0001
     {
       return true;
     }
@@ -76,51 +77,53 @@ static void MX_RTC_Init(void);
     }
   }
 
-  // *led on function
+  // *led on 
   void LED_ON()
   {
-    GPIOE->ODR |= (1U << 9);
+    // *| = OR
+    GPIOE->ODR = GPIOE->ODR | (1U << 9); // (1U << 9) = 0010 0000 0000
   }
 
-  // *led off function
+  // *led off
   void LED_OFF()
   {
-    GPIOE->ODR &= ~(1U << 9);
+    GPIOE->ODR = GPIOE->ODR & ~(1U << 9);
   }
 
 
   //!---------------------------------------------------------------------------------------
   //!TASK 02: INTERRUPT
 
-  // *0 = RGB sequence, 1 = Flash mode
-  static volatile uint8_t global_flash_mode = 0;   
-  static volatile uint8_t global_timer_expired = 0;
-    
-  void EXTI0_IRQHandler(void)
-  {
-    // *Check if EXTI line 0 pending bit is set
-    if (EXTI->PR & (1U << 0))
-    {
-      // *Clear pending flag by writing 1
-      EXTI->PR = (1U << 0);
+  // void EXTI0_IRQHandler(void)
+  // {
+  //   // *Check if EXTI line 0 pending bit is set
+  //   if ((EXTI->PR & (1U)) == 1)
+  //   {
+  //     // *Clear pending flag by writing 1
+  //     EXTI->PR = (1U);
 
-      // *Toggle PE9 state
-      if (GPIOE->ODR & (1U << 9))
-      {
-        LED_OFF();
-      }
-      else
-      {
-        LED_ON();
-      }
+  //     // *Toggle PE9 state
+  //     if ((GPIOE->ODR & (1U << 9)))
+  //     {
+  //       LED_OFF();
+  //     }
+  //     else
+  //     {
+  //       LED_ON();
+  //     }
 
-      NVIC_ClearPendingIRQ(EXTI0_IRQn);
-    }
-  }
+  //     NVIC_ClearPendingIRQ(EXTI0_IRQn);
+  //   }
+  // }
   
 
   //!---------------------------------------------------------------------------------------
   //!TASK 3: FSM
+
+  // *0 = RGB sequence, 1 = Flash mode
+  // static volatile uint8_t global_flash_mode = 0;   
+  // static volatile uint8_t global_timer_expired = 0;
+
   // void EXTI0_IRQHandler(void)
   // {
   //   // *Check if EXTI line 0 pending bit is set
@@ -143,146 +146,146 @@ static void MX_RTC_Init(void);
   // }
 
   // *States for RGB Sequence
-  typedef enum 
-  {
-    STATE_RED = 0,
-    STATE_GREEN,
-    STATE_BLUE
-  } 
-  RGB_State;
+  // typedef enum 
+  // {
+  //   STATE_RED = 0,
+  //   STATE_GREEN,
+  //   STATE_BLUE
+  // } 
+  // RGB_State;
 
-  // *States for All-Flash Sequence
-  typedef enum 
-  {
-    STATE_ALL_ON = 0,
-    STATE_ALL_OFF
-  } 
-  Flash_State;
+  // // *States for All-Flash Sequence
+  // typedef enum 
+  // {
+  //   STATE_ALL_ON = 0,
+  //   STATE_ALL_OFF
+  // } 
+  // Flash_State;
 
-  static volatile RGB_State global_rgb_state = STATE_RED;
-  static volatile Flash_State global_flash_state = STATE_ALL_ON;
+  // static volatile RGB_State global_rgb_state = STATE_RED;
+  // static volatile Flash_State global_flash_state = STATE_ALL_ON;
 
   //*TIM2 ISR: Generates the periodic 1-second timeout
-  void TIM2_IRQHandler(void)
-  {
-      if (TIM2->SR & TIM_SR_UIF)
-      {
-        // *Clear UIF flag
-        TIM2->SR &= ~TIM_SR_UIF;  
+  // void TIM2_IRQHandler(void)
+  // {
+  //     if (TIM2->SR & TIM_SR_UIF)
+  //     {
+  //       // *Clear UIF flag
+  //       TIM2->SR &= ~TIM_SR_UIF;  
 
-        // *Signal scheduler       
-        global_timer_expired = 1;             
-        NVIC_ClearPendingIRQ(TIM2_IRQn);
-      }
-  }
+  //       // *Signal scheduler       
+  //       global_timer_expired = 1;             
+  //       NVIC_ClearPendingIRQ(TIM2_IRQn);
+  //     }
+  // }
 
   // *Switch ISR: Pressing SW1 resets sequence back to Red (RGB start)
   // *Switch ISR: Updates g_flash_LED according to button press/release
 
   // *1 Hz Hardware Timer Init (TIM2)
-  void Timer2_Init(void)
-  {
-    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+  // void Timer2_Init(void)
+  // {
+  //   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 
-    // *8 MHz / 8000 = 1 kHz (1 ms tick)
-    TIM2->PSC = 8000 - 1;               
+  //   // *8 MHz / 8000 = 1 kHz (1 ms tick)
+  //   TIM2->PSC = 8000 - 1;               
 
-    // *1000 ms = 1 second overflow
-    TIM2->ARR = 1000 - 1;             
-    TIM2->DIER |= TIM_DIER_UIE;
-    NVIC_SetPriority(TIM2_IRQn, 3);
-    NVIC_EnableIRQ(TIM2_IRQn);
-    TIM2->SR &= ~TIM_SR_UIF;
-    TIM2->CR1 |= TIM_CR1_CEN;
-  }
+  //   // *1000 ms = 1 second overflow
+  //   TIM2->ARR = 1000 - 1;             
+  //   TIM2->DIER |= TIM_DIER_UIE;
+  //   NVIC_SetPriority(TIM2_IRQn, 3);
+  //   NVIC_EnableIRQ(TIM2_IRQn);
+  //   TIM2->SR &= ~TIM_SR_UIF;
+  //   TIM2->CR1 |= TIM_CR1_CEN;
+  // }
 
   // *RGB Cycling 
-  void Task_RGB_FSM(void)
-  {
-    if (global_flash_mode != 0 || !global_timer_expired)
-    {
-      return;
-    }
-    global_timer_expired = 0;
+  // void Task_RGB_FSM(void)
+  // {
+  //   if (global_flash_mode != 0 || !global_timer_expired)
+  //   {
+  //     return;
+  //   }
+  //   global_timer_expired = 0;
 
-    // *Clear all 3 LEDs: uses exact LED_OFF() for Red (PE9)
-    LED_OFF();
-    GPIOE->ODR &= ~((1U << 8) | (1U << 11));
+  //   // *Clear all 3 LEDs: uses exact LED_OFF() for Red (PE9)
+  //   LED_OFF();
+  //   GPIOE->ODR &= ~((1U << 8) | (1U << 11));
 
-    switch (global_rgb_state)
-    {
-      case STATE_RED:
-      {
-        // *Red ON (PE9)
-        LED_ON();                
-        global_rgb_state = STATE_GREEN;
-        break;
-      }
+  //   switch (global_rgb_state)
+  //   {
+  //     case STATE_RED:
+  //     {
+  //       // *Red ON (PE9)
+  //       LED_ON();                
+  //       global_rgb_state = STATE_GREEN;
+  //       break;
+  //     }
 
-      case STATE_GREEN:
-      {
-        // *Green ON (PE11)
-        GPIOE->ODR |= (1U << 11);    
-        global_rgb_state = STATE_BLUE;
-        break;
-      }
+  //     case STATE_GREEN:
+  //     {
+  //       // *Green ON (PE11)
+  //       GPIOE->ODR = GPIOE->ODR | (1U << 11);    
+  //       global_rgb_state = STATE_BLUE;
+  //       break;
+  //     }
 
-      case STATE_BLUE:
-      {
-        // *Blue ON (PE8)
-        GPIOE->ODR |= (1U << 8);     
-        global_rgb_state = STATE_RED;
-        break;
-      }
+  //     case STATE_BLUE:
+  //     {
+  //       // *Blue ON (PE8)
+  //       GPIOE->ODR = GPIOE->ODR | (1U << 8);     
+  //       global_rgb_state = STATE_RED;
+  //       break;
+  //     }
 
-      default:
-      {
-        global_rgb_state = STATE_RED;
-        break;
-      }
-    }
-  }
+  //     default:
+  //     {
+  //       global_rgb_state = STATE_RED;
+  //       break;
+  //     }
+  //   }
+  // }
 
   // *Non-blocking All-Flash FSM: Reuses exact LED_ON() and LED_OFF()
-  void Task_Flash_FSM(void)
-  {
-    if (global_flash_mode != 1 || !global_timer_expired)
-    {
-      return;
-    }
-    global_timer_expired = 0;
+  // void Task_Flash_FSM(void)
+  // {
+  //   if (global_flash_mode != 1 || !global_timer_expired)
+  //   {
+  //     return;
+  //   }
+  //   global_timer_expired = 0;
 
-    switch (global_flash_state)
-    {
-      case STATE_ALL_ON:
-      {
-        // *Reused exact function for Red
-        LED_ON();
+  //   switch (global_flash_state)
+  //   {
+  //     case STATE_ALL_ON:
+  //     {
+  //       // *Reused exact function for Red
+  //       LED_ON();
 
-        // *Turn ON Blue and Green                   
-        GPIOE->ODR |= (1U << 8) | (1U << 11); 
-        global_flash_state = STATE_ALL_OFF;
-        break;
-      }
+  //       // *Turn ON Blue and Green                   
+  //       GPIOE->ODR |= (1U << 8) | (1U << 11); 
+  //       global_flash_state = STATE_ALL_OFF;
+  //       break;
+  //     }
 
-      case STATE_ALL_OFF:
-      {
-        // *Reused exact function for Red
-        LED_OFF();     
+  //     case STATE_ALL_OFF:
+  //     {
+  //       // *Reused exact function for Red
+  //       LED_OFF();     
         
-        // *Turn OFF Blue and Green
-        GPIOE->ODR &= ~((1U << 8) | (1U << 11)); 
-        global_flash_state = STATE_ALL_ON;
-        break;
-      }
+  //       // *Turn OFF Blue and Green
+  //       GPIOE->ODR &= ~((1U << 8) | (1U << 11)); 
+  //       global_flash_state = STATE_ALL_ON;
+  //       break;
+  //     }
 
-      default:
-      {
-        global_flash_state = STATE_ALL_ON;
-        break;
-      }
-    }
-  }
+  //     default:
+  //     {
+  //       global_flash_state = STATE_ALL_ON;
+  //       break;
+  //     }
+  //   }
+  // }
 
 /* USER CODE END 0 */
 
@@ -319,69 +322,78 @@ int main(void)
 
   // !------------------------------------------------------------------------------
   // !TASK 1: POLLING
+  
+  // *enabling gpioA and gpioE clock
   RCC->AHBENR |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
 
-  // *Configure PE9 (LED) as General Purpose Output (MODER bits [19:18] = 01)
-  // *Clear bits 19:18
-  GPIOE->MODER &= ~(3U << (9 * 2)); 
+  // *setting the mode of PE9 to output (01)
+  GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2)); //* ~(3U << (9 * 2)) = 0011 1111 1111 1111 1111
+  GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2)); // * (1U << (9 * 2)) = 0100 0000 0000 0000 0000
 
-  // *Set bit 18
-  GPIOE->MODER |=  (1U << (9 * 2)); 
-
-  // *Optional: Configure PA0 explicitly as Input (MODER bits [1:0] = 00)
-  GPIOA->MODER &= ~(3U << (0 * 2));
+  // **setting the mode of PA0 to input (00)
+  GPIOA->MODER = GPIOA->MODER & ~(3U); // * ~(3U) = 1111 1111 1111 1111 1100
 
 
   // !------------------------------------------------------------------------------
   // !TASK 2: INTERRUPT
   
-  //*Enable AHB clocks for GPIOA, GPIOE and APB2 clock for SYSCFG
-  RCC->AHBENR  |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  // // *enabling gpioA and gpioE clock
+  // RCC->AHBENR = RCC->AHBENR | (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
 
-  //*Configure PE9 (LED) as Output (MODER bits [19:18] = 01)
-  GPIOE->MODER &= ~(3U << (9 * 2));
-  GPIOE->MODER |=  (1U << (9 * 2));
+  // //* enabling peripheral clock for interrupt
+  // RCC->APB2ENR = RCC->APB2ENR | RCC_APB2ENR_SYSCFGEN;
 
-  //*Configure PA0 as Input (MODER bits [1:0] = 00)
-  GPIOA->MODER &= ~(3U << (0 * 2));
+  // // *setting the mode of PE9 to output (01)
+  // GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2));
+  // GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2));
 
-  //*Route PA0 to EXTI0 in SYSCFG (0000 = PA[x] pin)
-  SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0;
+  // // **setting the mode of PA0 to input (00)
+  // GPIOA->MODER = GPIOA->MODER & ~(3U << (0 * 2));
 
-  //*Configure EXTI Line 0
-  EXTI->IMR  |= (1U << 0);   // Unmask Interrupt Line 0
-  EXTI->RTSR |= (1U << 0);   // Rising trigger enabled (active HIGH on press)
-  EXTI->FTSR &= ~(1U << 0);  // Falling trigger disabled
+  // //* select port A for EXTI line 0: EXTI0 field = 0000 → PA0
+  // SYSCFG->EXTICR[0] = SYSCFG->EXTICR[0] & ~SYSCFG_EXTICR1_EXTI0;
 
-  //*Configure NVIC for EXTI0
-  NVIC_SetPriority(EXTI0_IRQn, 2);
-  NVIC_EnableIRQ(EXTI0_IRQn);
+  // //* tells the interrupt line which that interrupt line 0 is allowed to create interrupt
+  // EXTI->IMR = EXTI->IMR | (1U << 0);
+
+  // //* rising trigger selection register = 1 
+  // //* low to high will trigger interrupt
+  // EXTI->RTSR = EXTI->RTSR | (1U << 0);
+
+  // // *falling trigger selection register = 0
+  // //* high to low will not trigger interrupt
+  // EXTI->FTSR = EXTI->FTSR & ~(1U << 0);
+
+  // //*configure NVIC for EXTI0 to set interrupt priority
+  // NVIC_SetPriority(EXTI0_IRQn, 0);
+
+  // // *enable EXTI0 interrupt in the NVIC so the cpu can respond to the interrupt
+  // NVIC_EnableIRQ(EXTI0_IRQn);
  
   // !------------------------------------------------------------------------------
   // !TASK 3: FSM  
 
-  //*Enable AHB Clocks (GPIOA, GPIOE) and APB2 (SYSCFG)
-  RCC->AHBENR  |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  // //*Enable AHB Clocks (GPIOA, GPIOE) and APB2 (SYSCFG)
+  // RCC->AHBENR  |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
+  // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
-  //*Configure PE8 (Blue), PE9 (Red), and PE11 (Green) as Outputs
-  GPIOE->MODER &= ~((3U << 16) | (3U << 18) | (3U << 22));
-  GPIOE->MODER |=  ((1U << 16) | (1U << 18) | (1U << 22));
+  // //*Configure PE8 (Blue), PE9 (Red), and PE11 (Green) as Outputs
+  // GPIOE->MODER &= ~((3U << 16) | (3U << 18) | (3U << 22));
+  // GPIOE->MODER |=  ((1U << 16) | (1U << 18) | (1U << 22));
 
-  //*Configure PA0 as Input and route to EXTI0
-  GPIOA->MODER &= ~(3U << 0);
-  SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0;
+  // //*Configure PA0 as Input and route to EXTI0
+  // GPIOA->MODER &= ~(3U << 0);
+  // SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0;
 
-  //*Configure EXTI0 on Rising Edge (Press)
-  EXTI->IMR  |= (1U << 0);
-  EXTI->RTSR |= (1U << 0);
-  EXTI->FTSR &= ~(1U << 0);
-  NVIC_SetPriority(EXTI0_IRQn, 2);
-  NVIC_EnableIRQ(EXTI0_IRQn);
+  // //*Configure EXTI0 on Rising Edge (Press)
+  // EXTI->IMR  |= (1U << 0);
+  // EXTI->RTSR |= (1U << 0);
+  // EXTI->FTSR &= ~(1U << 0);
+  // NVIC_SetPriority(EXTI0_IRQn, 2);
+  // NVIC_EnableIRQ(EXTI0_IRQn);
 
-  //*Start Hardware Timer 2
-  Timer2_Init();
+  // //*Start Hardware Timer 2
+  // Timer2_Init();
 
   /* USER CODE END 2 */
 
@@ -408,17 +420,15 @@ int main(void)
 
     // !-----------------------------------------------------------------------------
     // !TASK 2: INTERRUPT
-    // *Put CPU to sleep until next interrupt arrives
-    __WFI();
 
 
     // !-----------------------------------------------------------------------------
     // !TASK 3: FSM
-    // *Runs RGB sequence when switch is not pressed
-    Task_RGB_FSM();   
+    // // *Runs RGB sequence when switch is not pressed
+    // Task_RGB_FSM();   
 
-    // *Flashes all 3 LEDs together when switch is pressed
-    Task_Flash_FSM(); 
+    // // *Flashes all 3 LEDs together when switch is pressed
+    // Task_Flash_FSM(); 
   }
   /* USER CODE END 3 */
 }
