@@ -94,27 +94,27 @@ static void MX_RTC_Init(void);
   //!---------------------------------------------------------------------------------------
   //!TASK 02: INTERRUPT
 
-  // void EXTI0_IRQHandler(void)
-  // {
-  //   // *Check if EXTI line 0 pending bit is set
-  //   if ((EXTI->PR & (1U)) == 1)
-  //   {
-  //     // *Clear pending flag by writing 1
-  //     EXTI->PR = (1U);
+  void EXTI0_IRQHandler(void)
+  {
+    // *Check if EXTI line 0 pending bit is set
+    if ((EXTI->PR & (1U)) == 1)
+    {
+      // *Clear pending flag by writing 1
+      EXTI->PR = (1U);
 
-  //     // *Toggle PE9 state
-  //     if ((GPIOE->ODR & (1U << 9)))
-  //     {
-  //       LED_OFF();
-  //     }
-  //     else
-  //     {
-  //       LED_ON();
-  //     }
+      // *Toggle PE9 state
+      if ((GPIOE->ODR & (1U << 9)))
+      {
+        LED_OFF();
+      }
+      else
+      {
+        LED_ON();
+      }
 
-  //     NVIC_ClearPendingIRQ(EXTI0_IRQn);
-  //   }
-  // }
+      NVIC_ClearPendingIRQ(EXTI0_IRQn);
+    }
+  }
   
 
   //!---------------------------------------------------------------------------------------
@@ -157,6 +157,7 @@ static void MX_RTC_Init(void);
   // // *States for All-Flash Sequence
   // typedef enum 
   // {
+
   //   STATE_ALL_ON = 0,
   //   STATE_ALL_OFF
   // } 
@@ -323,52 +324,52 @@ int main(void)
   // !------------------------------------------------------------------------------
   // !TASK 1: POLLING
   
-  // *enabling gpioA and gpioE clock
-  RCC->AHBENR |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
+  // // *enabling gpioA and gpioE clock
+  // RCC->AHBENR |= (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
 
-  // *setting the mode of PE9 to output (01)
-  GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2)); //* ~(3U << (9 * 2)) = 0011 1111 1111 1111 1111
-  GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2)); // * (1U << (9 * 2)) = 0100 0000 0000 0000 0000
+  // // *setting the mode of PE9 to output (01)
+  // GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2)); //* ~(3U << (9 * 2)) = 0011 1111 1111 1111 1111
+  // GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2)); // * (1U << (9 * 2)) = 0100 0000 0000 0000 0000
 
-  // **setting the mode of PA0 to input (00)
-  GPIOA->MODER = GPIOA->MODER & ~(3U); // * ~(3U) = 1111 1111 1111 1111 1100
+  // // **setting the mode of PA0 to input (00)
+  // GPIOA->MODER = GPIOA->MODER & ~(3U); // * ~(3U) = 1111 1111 1111 1111 1100
 
 
   // !------------------------------------------------------------------------------
   // !TASK 2: INTERRUPT
   
-  // // *enabling gpioA and gpioE clock
-  // RCC->AHBENR = RCC->AHBENR | (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
+  // *enabling gpioA and gpioE clock
+  RCC->AHBENR = RCC->AHBENR | (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOEEN);
 
-  // //* enabling peripheral clock for interrupt
-  // RCC->APB2ENR = RCC->APB2ENR | RCC_APB2ENR_SYSCFGEN;
+  //* enabling peripheral clock for interrupt
+  RCC->APB2ENR = RCC->APB2ENR | RCC_APB2ENR_SYSCFGEN;
 
-  // // *setting the mode of PE9 to output (01)
-  // GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2));
-  // GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2));
+  // *setting the mode of PE9 to output (01)
+  GPIOE->MODER = GPIOE->MODER & ~(3U << (9 * 2));
+  GPIOE->MODER = GPIOE->MODER | (1U << (9 * 2));
 
-  // // **setting the mode of PA0 to input (00)
-  // GPIOA->MODER = GPIOA->MODER & ~(3U << (0 * 2));
+  // **setting the mode of PA0 to input (00)
+  GPIOA->MODER = GPIOA->MODER & ~(3U);
 
-  // //* select port A for EXTI line 0: EXTI0 field = 0000 → PA0
-  // SYSCFG->EXTICR[0] = SYSCFG->EXTICR[0] & ~SYSCFG_EXTICR1_EXTI0;
+  //* select port A for EXTI line 0: EXTI0 field = 0000 → PA0
+  SYSCFG->EXTICR[0] = SYSCFG->EXTICR[0] & ~SYSCFG_EXTICR1_EXTI0;
 
-  // //* tells the interrupt line which that interrupt line 0 is allowed to create interrupt
-  // EXTI->IMR = EXTI->IMR | (1U << 0);
+  //* tells the interrupt line which that interrupt line 0 is allowed to create interrupt
+  EXTI->IMR = EXTI->IMR | (1U);
 
-  // //* rising trigger selection register = 1 
-  // //* low to high will trigger interrupt
-  // EXTI->RTSR = EXTI->RTSR | (1U << 0);
+  //* rising trigger selection register = 1 
+  //* low to high will trigger interrupt
+  EXTI->RTSR = EXTI->RTSR | (1U);
 
-  // // *falling trigger selection register = 0
-  // //* high to low will not trigger interrupt
-  // EXTI->FTSR = EXTI->FTSR & ~(1U << 0);
+  // *falling trigger selection register = 0
+  //* high to low will not trigger interrupt
+  EXTI->FTSR = EXTI->FTSR & ~(1U);
 
-  // //*configure NVIC for EXTI0 to set interrupt priority
-  // NVIC_SetPriority(EXTI0_IRQn, 0);
+  //*configure NVIC for EXTI0 to set interrupt priority
+  NVIC_SetPriority(EXTI0_IRQn, 0);
 
-  // // *enable EXTI0 interrupt in the NVIC so the cpu can respond to the interrupt
-  // NVIC_EnableIRQ(EXTI0_IRQn);
+  // *enable EXTI0 interrupt in the NVIC so the cpu can respond to the interrupt
+  NVIC_EnableIRQ(EXTI0_IRQn);
  
   // !------------------------------------------------------------------------------
   // !TASK 3: FSM  
@@ -408,21 +409,21 @@ int main(void)
     // !-----------------------------------------------------------------------------
     // !TASK 1: POLLING
 
-    bool switch_pressed = switch_state();
-    if (switch_pressed == true) 
-    {
-      LED_ON();
-    }
-    else
-    {
-      LED_OFF();
-    }
+    // bool switch_pressed = switch_state();
+    // if (switch_pressed == true) 
+    // {
+    //   LED_ON();
+    // }
+    // else
+    // {
+    //   LED_OFF();
+    // }
 
     // !-----------------------------------------------------------------------------
     // !TASK 2: INTERRUPT
 
 
-    // !-----------------------------------------------------------------------------
+    // !-----------------------------------------------------------------------------                                                                                                                             hiiiiiii------------------------------------
     // !TASK 3: FSM
     // // *Runs RGB sequence when switch is not pressed
     // Task_RGB_FSM();   
